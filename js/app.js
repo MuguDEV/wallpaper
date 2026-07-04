@@ -295,6 +295,23 @@ function initP5() {
     });
 }
 
+// Debounce function to limit render calls
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+const debouncedRender = debounce(() => {
+    renderCurrentAlgorithm();
+}, 50);
+
 // Dynamically build the UI for the selected algorithm
 function buildAlgorithmControls() {
     const container = document.getElementById('dynamic-controls');
@@ -341,8 +358,7 @@ function buildAlgorithmControls() {
                 const val = parseFloat(e.target.value);
                 valDisplay.textContent = val;
                 state.currentParams.values[key].value = val;
-                // debounce this in a real app, but for now re-render immediately
-                renderCurrentAlgorithm();
+                debouncedRender();
             });
 
             labelRow.appendChild(label);
