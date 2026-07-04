@@ -1,9 +1,10 @@
-const CACHE_NAME = 'wllpr-cache-v1';
+const CACHE_NAME = 'wllpr-cache-v2';
 const urlsToCache = [
   '/',
   '/index.html',
   '/app.js',
   '/algorithms.js',
+  '/effects.js',
   '/palettes.js',
   '/manifest.json',
   'https://cdn.tailwindcss.com',
@@ -23,7 +24,6 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Cache hit - return response
         if (response) {
           return response;
         }

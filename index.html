@@ -73,8 +73,6 @@
 </head>
 <body class="bg-gray-100 dark:bg-zinc-950 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col relative overflow-x-hidden">
 
-    <!-- Background Canvas Removed per user instruction to keep it plain simple -->
-
     <!-- Header -->
     <header class="w-full py-6 px-8 flex justify-between items-center relative z-10 glass-panel border-b border-gray-200 dark:border-zinc-800">
         <div class="inline-flex items-center gap-2">
@@ -178,6 +176,19 @@
 
                 <hr class="border-gray-200 dark:border-zinc-800">
 
+                <!-- Texture/Effects Selector -->
+                <div>
+                    <div class="flex justify-between items-end mb-3">
+                        <label class="text-xs tracking-widest text-gray-500 dark:text-gray-400 uppercase">Effect / Overlay</label>
+                        <span id="selected-effect-name" class="text-sm font-medium">Clean</span>
+                    </div>
+                    <div id="effects-grid" class="flex flex-wrap gap-2">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <hr class="border-gray-200 dark:border-zinc-800">
+
                 <!-- Palette -->
                 <div>
                     <label class="text-xs tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-3 block">Color Palette (<span id="selected-palette-name">Nordic Minimal</span>)</label>
@@ -227,6 +238,7 @@
 
     <script src="palettes.js"></script>
     <script src="algorithms.js"></script>
+    <script src="effects.js"></script>
     <script src="app.js"></script>
 
     <script>

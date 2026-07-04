@@ -2,6 +2,7 @@
 let state = {
     algorithm: ALGORITHMS[0].id,
     palette: PALETTES[0].id,
+    effect: 'none',
     mode: 'dark',
     favorites: [],
     searchQuery: ''
@@ -21,6 +22,8 @@ const algorithmsGrid = document.getElementById('algorithms-grid');
 const selectedPatternName = document.getElementById('selected-pattern-name');
 const palettesGrid = document.getElementById('palettes-grid');
 const selectedPaletteName = document.getElementById('selected-palette-name');
+const effectsGrid = document.getElementById('effects-grid');
+const selectedEffectName = document.getElementById('selected-effect-name');
 const btnGenerate = document.getElementById('btn-generate');
 const btnDownloadDesktop = document.getElementById('btn-download-desktop');
 const btnDownloadMobile = document.getElementById('btn-download-mobile');
@@ -44,6 +47,7 @@ async function init() {
     await loadFavorites();
     renderAlgorithmsGrid();
     renderPalettes();
+    renderEffects();
     setupTheme();
     setupP5();
     setupEvents();
@@ -75,8 +79,8 @@ function saveFavorites() {
 }
 
 function toggleFavorite() {
-    const current = { algo: state.algorithm, pal: state.palette };
-    const index = state.favorites.findIndex(f => f.algo === current.algo && f.pal === current.pal);
+    const current = { algo: state.algorithm, pal: state.palette, eff: state.effect };
+    const index = state.favorites.findIndex(f => f.algo === current.algo && f.pal === current.pal && f.eff === current.eff);
 
     if (index > -1) {
         state.favorites.splice(index, 1);
@@ -92,7 +96,7 @@ function toggleFavorite() {
 
 function updateFavoriteButton() {
     if(!btnFavorite) return;
-    const isFav = state.favorites.some(f => f.algo === state.algorithm && f.pal === state.palette);
+    const isFav = state.favorites.some(f => f.algo === state.algorithm && f.pal === state.palette && f.eff === state.effect);
     if(isFav) {
         btnFavorite.classList.add('text-red-500');
         btnFavorite.classList.remove('text-gray-500', 'dark:text-gray-400');
@@ -116,18 +120,19 @@ function renderFavorites() {
     state.favorites.forEach((fav, idx) => {
         const algo = ALGORITHMS.find(a => a.id === fav.algo);
         const pal = PALETTES.find(p => p.id === fav.pal);
+        const eff = EFFECTS.find(e => e.id === fav.eff) || EFFECTS[0];
+
         if(!algo || !pal) return;
 
         const div = document.createElement('div');
         div.className = 'relative rounded-xl overflow-hidden cursor-pointer shadow border border-gray-200 dark:border-gray-800 hover:scale-105 transition aspect-video bg-black';
 
-        // Render preview inside thumbnail container
         const canvasContainerId = `fav-canvas-${idx}`;
         div.innerHTML = `
             <div id="${canvasContainerId}" class="w-full h-full absolute inset-0"></div>
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-2 pointer-events-none">
                 <span class="text-white text-xs font-bold truncate">${algo.name}</span>
-                <span class="text-white/80 text-[10px] truncate">${pal.name}</span>
+                <span class="text-white/80 text-[10px] truncate">${pal.name} ${eff.id !== 'none' ? '+ ' + eff.name : ''}</span>
             </div>
             <button class="absolute top-2 right-2 text-white/50 hover:text-white bg-black/50 rounded-full p-1 z-10 delete-fav" data-idx="${idx}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -135,13 +140,18 @@ function renderFavorites() {
         `;
 
         div.addEventListener('click', (e) => {
-            if(e.target.closest('.delete-fav')) return; // ignore delete clicks
+            if(e.target.closest('.delete-fav')) return;
             state.algorithm = fav.algo;
             state.palette = fav.pal;
+            state.effect = fav.eff || 'none';
+
             selectedPatternName.textContent = algo.name;
             selectedPaletteName.textContent = pal.name;
+            selectedEffectName.textContent = eff.name;
+
             renderAlgorithmsGrid();
             renderPalettes();
+            renderEffects();
             regeneratePreviews();
             favoritesModal.classList.add('hidden');
         });
@@ -158,12 +168,12 @@ function renderFavorites() {
                     canvas.parent(canvasContainerId);
                     p.noLoop();
                     algo.draw(p, pal.colors, p.width, p.height);
+                    eff.apply(p, p.width, p.height);
                 };
             });
         }, 100);
     });
 
-    // Attach delete events
     document.querySelectorAll('.delete-fav').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -202,8 +212,11 @@ function setupP5() {
 function generateArt(p) {
     const algo = ALGORITHMS.find(a => a.id === state.algorithm);
     const palette = PALETTES.find(pal => pal.id === state.palette);
+    const eff = EFFECTS.find(e => e.id === state.effect) || EFFECTS[0];
+
     if(algo && palette) {
         algo.draw(p, palette.colors, p.width, p.height);
+        eff.apply(p, p.width, p.height);
     }
 }
 
@@ -259,6 +272,32 @@ function renderAlgorithmsGrid() {
     });
 }
 
+function renderEffects() {
+    if(!effectsGrid) return;
+    effectsGrid.innerHTML = '';
+
+    EFFECTS.forEach(eff => {
+        const btn = document.createElement('button');
+        const isSelected = eff.id === state.effect;
+
+        btn.className = `px-3 py-1.5 rounded-lg text-xs font-medium transition-all
+            ${isSelected
+                ? 'bg-black text-white dark:bg-white dark:text-black shadow-md'
+                : 'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-zinc-700'}`;
+
+        btn.textContent = eff.name;
+
+        btn.addEventListener('click', () => {
+            state.effect = eff.id;
+            selectedEffectName.textContent = eff.name;
+            renderEffects();
+            regeneratePreviews();
+        });
+
+        effectsGrid.appendChild(btn);
+    });
+}
+
 function renderPalettes() {
     if(!palettesGrid) return;
     palettesGrid.innerHTML = '';
@@ -278,8 +317,15 @@ function renderPalettes() {
         div.addEventListener('mouseenter', () => {
             if(pal.id !== state.palette) {
                 const tempAlgo = ALGORITHMS.find(a => a.id === state.algorithm);
-                if(desktopP5) tempAlgo.draw(desktopP5, pal.colors, desktopP5.width, desktopP5.height);
-                if(mobileP5) tempAlgo.draw(mobileP5, pal.colors, mobileP5.width, mobileP5.height);
+                const tempEff = EFFECTS.find(e => e.id === state.effect) || EFFECTS[0];
+                if(desktopP5) {
+                    tempAlgo.draw(desktopP5, pal.colors, desktopP5.width, desktopP5.height);
+                    tempEff.apply(desktopP5, desktopP5.width, desktopP5.height);
+                }
+                if(mobileP5) {
+                    tempAlgo.draw(mobileP5, pal.colors, mobileP5.width, mobileP5.height);
+                    tempEff.apply(mobileP5, mobileP5.width, mobileP5.height);
+                }
                 selectedPaletteName.textContent = pal.name;
             }
         });
@@ -307,12 +353,15 @@ function setupEvents() {
     if(btnGenerate) btnGenerate.addEventListener('click', () => {
         state.algorithm = ALGORITHMS[Math.floor(Math.random() * ALGORITHMS.length)].id;
         state.palette = PALETTES[Math.floor(Math.random() * PALETTES.length)].id;
+        state.effect = EFFECTS[Math.floor(Math.random() * EFFECTS.length)].id;
 
         selectedPatternName.textContent = ALGORITHMS.find(a => a.id === state.algorithm).name;
         selectedPaletteName.textContent = PALETTES.find(p => p.id === state.palette).name;
+        selectedEffectName.textContent = EFFECTS.find(e => e.id === state.effect).name;
 
         renderAlgorithmsGrid();
         renderPalettes();
+        renderEffects();
         regeneratePreviews();
     });
 
@@ -381,9 +430,12 @@ function generateHighResAndDownload(type) {
 
             const algo = ALGORITHMS.find(a => a.id === state.algorithm);
             const palette = PALETTES.find(pal => pal.id === state.palette);
-            algo.draw(p, palette.colors, p.width, p.height);
+            const eff = EFFECTS.find(e => e.id === state.effect) || EFFECTS[0];
 
-            const filename = `WLLPR_${algo.id}_${palette.id}_${type}.png`;
+            algo.draw(p, palette.colors, p.width, p.height);
+            eff.apply(p, p.width, p.height);
+
+            const filename = `WLLPR_${algo.id}_${palette.id}_${eff.id}_${type}.png`;
             p.saveCanvas(canvas, filename, 'png');
 
             setTimeout(() => {
