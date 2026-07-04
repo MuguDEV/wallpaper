@@ -85,3 +85,5 @@ class StorageManager {
 }
 
 const db = new StorageManager();
+window.db = db;
+db.init().then(() => console.log('Storage Initialized')).catch(e => console.error('Storage Init Error', e));

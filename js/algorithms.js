@@ -1,5 +1,50 @@
 const ALGORITHMS = [
     {
+        id: 'oceanWaves',
+        name: 'Ocean Waves',
+        category: 'Nature',
+        description: 'Overlapping sine and noise waves simulating a calm sea.',
+        popular: true,
+        params: {
+            waveCount: { type: 'range', min: 3, max: 30, value: 12, label: 'Wave Count' },
+            waveAmplitude: { type: 'range', min: 10, max: 300, value: 80, label: 'Wave Amplitude' },
+            waveComplexity: { type: 'range', min: 0.001, max: 0.05, value: 0.01, step: 0.001, label: 'Complexity' }
+        },
+        draw: (p, colors, width, height, params) => {
+            p.background(p.color(colors[0]));
+            p.noStroke();
+
+            const waves = params.waveCount.value;
+            const amp = params.waveAmplitude.value;
+            const comp = params.waveComplexity.value;
+
+            const stepY = height / waves;
+
+            for (let i = 0; i < waves; i++) {
+                let yBase = (i * stepY) + (stepY / 2);
+
+                let col = p.color(colors[(i % (colors.length - 1)) + 1]);
+                col.setAlpha(180);
+                p.fill(col);
+
+                p.beginShape();
+                p.vertex(0, height);
+
+                let xoff = i * 100; // offset noise per wave
+                for (let x = 0; x <= width; x += width * 0.02) {
+                    // Combine sine wave and noise for natural look
+                    let sineVal = p.sin(x * 0.002 + i) * amp * 0.5;
+                    let noiseVal = p.map(p.noise(xoff), 0, 1, -amp, amp);
+
+                    p.vertex(x, yBase + sineVal + noiseVal);
+                    xoff += comp * width;
+                }
+                p.vertex(width, height);
+                p.endShape(p.CLOSE);
+            }
+        }
+    },
+    {
         id: 'fractalTopography',
         name: 'Fractal Topography',
         category: 'Organic',
@@ -157,6 +202,78 @@ const ALGORITHMS = [
         }
     },
     {
+        id: 'blackHole',
+        name: 'Black Hole',
+        category: 'Space',
+        description: 'A mesmerizing event horizon with an accretion disk.',
+        popular: true,
+        params: {
+            diskSize: { type: 'range', min: 0.2, max: 0.8, value: 0.4, step: 0.05, label: 'Disk Size' },
+            glowIntensity: { type: 'range', min: 100, max: 500, value: 300, label: 'Glow Intensity' },
+            particles: { type: 'range', min: 100, max: 2000, value: 800, label: 'Disk Particles' }
+        },
+        draw: (p, colors, width, height, params) => {
+            p.background(p.color(colors[0]));
+
+            const diskR = Math.min(width, height) * params.diskSize.value;
+            const glow = params.glowIntensity.value;
+            const pCount = params.particles.value;
+
+            const cx = width / 2;
+            const cy = height / 2;
+
+            p.noStroke();
+
+            // Accretion disk (Gradient glow)
+            const glowCol = p.color(colors[1] || '#ff5500');
+            for (let r = diskR * 2.5; r > diskR; r -= diskR * 0.05) {
+                let alpha = p.map(r, diskR * 2.5, diskR, 0, glow / 10);
+                glowCol.setAlpha(alpha);
+                p.fill(glowCol);
+
+                // Elliptical perspective
+                p.push();
+                p.translate(cx, cy);
+                p.rotate(p.PI / 12); // slight tilt
+                p.ellipse(0, 0, r * 2, r * 0.6);
+                p.pop();
+            }
+
+            // Core glow (spherical)
+            const coreGlow = p.color(colors[2] || colors[1] || '#ffffff');
+            for (let r = diskR * 1.5; r > diskR * 0.8; r -= 5) {
+                let alpha = p.map(r, diskR * 1.5, diskR * 0.8, 0, glow / 5);
+                coreGlow.setAlpha(alpha);
+                p.fill(coreGlow);
+                p.circle(cx, cy, r * 2);
+            }
+
+            // Event horizon (pitch black)
+            p.fill(0); // Absolute black
+            p.circle(cx, cy, diskR * 2 * 0.8);
+
+            // Particles swirling in the disk
+            for(let i=0; i<pCount; i++) {
+                let angle = p.random(p.TWO_PI);
+                // Distribute particles closer to the black hole
+                let r = diskR + Math.pow(p.random(1), 2) * diskR * 2;
+
+                let px = p.cos(angle) * r;
+                let py = p.sin(angle) * r * 0.3; // flatten
+
+                p.push();
+                p.translate(cx, cy);
+                p.rotate(p.PI / 12);
+
+                let pCol = p.color(colors[p.floor(p.random(1, colors.length))]);
+                pCol.setAlpha(p.random(100, 255));
+                p.fill(pCol);
+                p.circle(px, py, p.random(1, 4));
+                p.pop();
+            }
+        }
+    },
+    {
         id: 'cosmicDust',
         name: 'Cosmic Dust',
         category: 'Space',
@@ -297,6 +414,94 @@ const ALGORITHMS = [
         }
     },
     {
+        id: 'lowPolyTerrain',
+        name: 'Low Poly Terrain',
+        category: 'Geometry',
+        description: 'A triangulated 3D-like landscape mesh.',
+        popular: true,
+        params: {
+            resolution: { type: 'range', min: 20, max: 150, value: 60, label: 'Grid Resolution' },
+            depth: { type: 'range', min: 0.1, max: 1.0, value: 0.4, step: 0.05, label: 'Z-Depth' },
+            lightAngle: { type: 'range', min: 0, max: 6.28, value: 1.57, step: 0.1, label: 'Light Angle' }
+        },
+        draw: (p, colors, width, height, params) => {
+            p.background(p.color(colors[0]));
+
+            const res = params.resolution.value;
+            const depth = params.depth.value * Math.min(width, height);
+            const lAngle = params.lightAngle.value;
+
+            const cols = Math.ceil(width / res) + 1;
+            const rows = Math.ceil(height / res) + 1;
+
+            const points = [];
+            for(let y=0; y<=rows; y++) {
+                let rowPts = [];
+                for(let x=0; x<=cols; x++) {
+                    let px = x * res;
+                    let py = y * res;
+                    // displace x and y slightly to break the perfect grid
+                    if(x>0 && x<cols && y>0 && y<rows) {
+                        px += p.random(-res*0.4, res*0.4);
+                        py += p.random(-res*0.4, res*0.4);
+                    }
+                    // generate a fake Z value based on noise
+                    let z = p.map(p.noise(x * 0.1, y * 0.1), 0, 1, -depth, depth);
+                    rowPts.push(p.createVector(px, py, z));
+                }
+                points.push(rowPts);
+            }
+
+            p.strokeWeight(1);
+            p.stroke(p.color(colors[0])); // outline same as bg or slightly darker
+
+            const lightDir = p.createVector(p.cos(lAngle), p.sin(lAngle), 0.5).normalize();
+
+            for(let y=0; y<rows-1; y++) {
+                for(let x=0; x<cols-1; x++) {
+                    let p1 = points[y][x];
+                    let p2 = points[y][x+1];
+                    let p3 = points[y+1][x];
+                    let p4 = points[y+1][x+1];
+
+                    // Triangle 1: p1, p2, p3
+                    let normal1 = p5.Vector.cross(p5.Vector.sub(p2, p1), p5.Vector.sub(p3, p1)).normalize();
+                    let brightness1 = p.map(normal1.dot(lightDir), -1, 1, 0.2, 1.2);
+
+                    let colIdx1 = Math.floor(p.map(p1.z, -depth, depth, 1, colors.length));
+                    colIdx1 = p.constrain(colIdx1, 1, colors.length-1);
+                    if(colors.length === 1) colIdx1 = 0;
+
+                    let c1 = p.color(colors[colIdx1]);
+                    c1.setRed(p.red(c1) * brightness1);
+                    c1.setGreen(p.green(c1) * brightness1);
+                    c1.setBlue(p.blue(c1) * brightness1);
+
+                    p.fill(c1);
+                    p.triangle(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+
+                    // Triangle 2: p2, p4, p3
+                    let normal2 = p5.Vector.cross(p5.Vector.sub(p4, p2), p5.Vector.sub(p3, p2)).normalize();
+                    // Fix normal direction to match
+                    if(normal2.z < 0) normal2.mult(-1);
+                    let brightness2 = p.map(normal2.dot(lightDir), -1, 1, 0.2, 1.2);
+
+                    let colIdx2 = Math.floor(p.map(p4.z, -depth, depth, 1, colors.length));
+                    colIdx2 = p.constrain(colIdx2, 1, colors.length-1);
+                    if(colors.length === 1) colIdx2 = 0;
+
+                    let c2 = p.color(colors[colIdx2]);
+                    c2.setRed(p.red(c2) * brightness2);
+                    c2.setGreen(p.green(c2) * brightness2);
+                    c2.setBlue(p.blue(c2) * brightness2);
+
+                    p.fill(c2);
+                    p.triangle(p2.x, p2.y, p4.x, p4.y, p3.x, p3.y);
+                }
+            }
+        }
+    },
+    {
         id: 'hexGrid',
         name: 'Hex Grid',
         category: 'Geometry',
@@ -415,6 +620,35 @@ const ALGORITHMS = [
 
                     p.line(particle.x, particle.y, particle.x + v.x, particle.y + v.y);
                     particle.add(v);
+                }
+            }
+        }
+    },
+    {
+        id: 'retroPixel',
+        name: 'Retro Pixel',
+        category: 'Retro',
+        description: 'Low-resolution pixel art driven by noise.',
+        popular: false,
+        params: {
+            pixelSize: { type: 'range', min: 10, max: 100, value: 30, label: 'Pixel Size' },
+            noiseScale: { type: 'range', min: 0.01, max: 0.2, value: 0.05, step: 0.01, label: 'Noise Scale' }
+        },
+        draw: (p, colors, width, height, params) => {
+            p.noStroke();
+
+            const pSize = params.pixelSize.value;
+            const nScale = params.noiseScale.value;
+
+            for (let y = 0; y < height; y += pSize) {
+                for (let x = 0; x < width; x += pSize) {
+                    let n = p.noise(x * nScale, y * nScale);
+                    // Map noise to color index
+                    let colIdx = Math.floor(n * colors.length);
+                    colIdx = p.constrain(colIdx, 0, colors.length - 1);
+
+                    p.fill(p.color(colors[colIdx]));
+                    p.rect(x, y, pSize, pSize);
                 }
             }
         }

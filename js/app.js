@@ -439,3 +439,12 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
     initP5();
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+    const editPaletteBtn = document.getElementById('edit-palette-btn');
+    if (editPaletteBtn) {
+        editPaletteBtn.addEventListener('click', () => {
+            alert('Advanced Color Editor coming soon! For now, please select a preset palette from the dropdown.');
+        });
+    }
+});
