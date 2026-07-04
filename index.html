@@ -1,68 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WLLPR - Wallpaper Generator</title>
+    <title>WLLPR - Minimalist Wallpaper Generator</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#ffffff">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {}
+            }
+        }
+    </script>
     <!-- p5.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script> <!-- For easier IndexedDB -->
 
     <style>
         body {
-            background-color: #0f172a; /* slate-900 */
-            color: #f8fafc; /* slate-50 */
-            margin: 0;
-            overflow-x: hidden;
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-        }
-
-        /* Glassmorphism Classes */
-        .glass {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .glow:hover {
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        .selected-ring {
-            box-shadow: 0 0 0 2px #38bdf8; /* sky-400 */
-            border-color: transparent !important;
-        }
-
-        /* Background container for the live preview */
-        #canvas-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -1;
-        }
-
-        /* Modal for setup instructions */
-        #setup-modal {
-            display: none;
-        }
-        #setup-modal.active {
-            display: flex;
+            transition: background-color 0.3s, color 0.3s;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
         /* Hide scrollbar */
@@ -73,87 +33,194 @@
             background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(156, 163, 175, 0.5);
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(156, 163, 175, 0.8);
+        }
+
+        .preview-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 2px solid #e5e7eb;
+        }
+        .dark .preview-container {
+            border-color: #374151;
+        }
+
+        .clock-overlay {
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: white;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .clock-overlay .date {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.2rem;
+        }
+
+        .clock-overlay .time {
+            font-size: 2.5rem;
+            font-weight: 500;
+            line-height: 1;
+        }
+
+        .selected-ring {
+            box-shadow: 0 0 0 2px #000;
+        }
+        .dark .selected-ring {
+            box-shadow: 0 0 0 2px #fff;
+        }
+
+        .select-container {
+            position: relative;
+        }
+
+        #pattern-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        #pattern-dropdown.active {
+            display: block;
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
-    <!-- Live Preview Background -->
-    <div id="canvas-container"></div>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col">
 
-    <!-- Navigation -->
-    <nav class="glass-panel w-full p-4 flex justify-between items-center fixed top-0 z-50">
-        <div class="text-xl font-bold tracking-widest text-sky-400">WLLPR</div>
-        <div class="flex gap-4">
-            <button id="nav-generator" class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition cursor-pointer text-sm font-semibold text-white">Generator</button>
-            <button id="nav-favorites" class="px-4 py-2 rounded-lg bg-transparent hover:bg-white/10 transition cursor-pointer text-sm font-semibold text-white/70">My Wallpapers</button>
+    <!-- Header -->
+    <header class="w-full py-8 text-center relative">
+        <div class="inline-flex items-center gap-2 justify-center">
+            <span class="bg-black dark:bg-white text-white dark:text-black font-bold px-2 py-1 rounded text-xs tracking-wider">WPR</span>
+            <h1 class="text-2xl font-light tracking-widest">WLLPR</h1>
         </div>
-    </nav>
+        <p class="text-xs tracking-[0.2em] text-gray-500 dark:text-gray-400 mt-2 uppercase">Generate your minimalist wallpaper</p>
+
+        <button id="theme-toggle" class="absolute right-8 top-8 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+            <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+        </button>
+    </header>
 
     <!-- Main Content -->
-    <main class="flex-grow pt-24 pb-32 px-4 sm:px-8 max-w-7xl mx-auto w-full relative z-10" id="main-content">
-        <!-- Generator View -->
-        <div id="view-generator" class="space-y-8 fade-in">
-            <!-- Algorithms Section -->
-            <section>
-                <h2 class="text-2xl font-semibold mb-4 drop-shadow-md">1. Select Art Style</h2>
-                <div id="algorithms-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    <!-- Populated by JS -->
-                </div>
-            </section>
+    <main class="flex-grow px-4 sm:px-8 max-w-7xl mx-auto w-full flex flex-col lg:flex-row gap-8 pb-12">
 
-            <!-- Palettes Section -->
-            <section>
-                <h2 class="text-2xl font-semibold mb-4 drop-shadow-md">2. Select Color Palette</h2>
-                <div id="palettes-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    <!-- Populated by JS -->
+        <!-- Previews -->
+        <div class="flex-grow bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 lg:p-12 flex flex-col sm:flex-row items-center justify-center gap-8">
+            <!-- Desktop -->
+            <div class="flex flex-col items-center gap-3">
+                <span class="text-xs tracking-widest text-gray-400 uppercase">Desktop 4K</span>
+                <div class="preview-container w-[400px] h-[225px] bg-black relative" id="desktop-preview">
+                    <!-- p5 canvas injected here -->
+                    <div class="clock-overlay">
+                        <div class="date" id="desktop-date">Sunday, 14 June</div>
+                        <div class="time" id="desktop-time">09:41</div>
+                    </div>
                 </div>
-            </section>
+            </div>
+
+            <!-- Mobile -->
+            <div class="flex flex-col items-center gap-3">
+                <span class="text-xs tracking-widest text-gray-400 uppercase">Mobile</span>
+                <div class="preview-container w-[150px] h-[325px] bg-black relative rounded-3xl" id="mobile-preview">
+                    <!-- p5 canvas injected here -->
+                    <div class="clock-overlay" style="top: 10%;">
+                        <div class="date" style="font-size: 0.5rem;" id="mobile-date">Sunday, 14 June</div>
+                        <div class="time" style="font-size: 2rem;" id="mobile-time">09:41</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Favorites View -->
-        <div id="view-favorites" class="hidden space-y-6 fade-in">
-            <h2 class="text-3xl font-bold mb-6 drop-shadow-md">My Wallpapers</h2>
-            <div id="favorites-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Populated by JS -->
-                <p id="no-favorites-msg" class="text-white/50 col-span-full text-center py-12">No favorites yet. Generate some cool wallpapers first!</p>
+        <!-- Controls -->
+        <div class="w-full lg:w-80 flex flex-col gap-6">
+
+            <!-- Pattern Selection -->
+            <div>
+                <label class="text-xs tracking-widest text-gray-400 uppercase mb-2 block">Pattern</label>
+                <div class="select-container">
+                    <div id="pattern-selector" class="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-md p-3 flex justify-between items-center cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 transition">
+                        <div class="flex items-center gap-2">
+                            <span id="selected-pattern-name" class="font-medium text-sm">Minimalist Peaks</span>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+
+                    <div id="pattern-dropdown" class="absolute w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg hidden">
+                        <div class="p-2 border-b border-gray-100 dark:border-gray-700">
+                            <input type="text" id="pattern-search" placeholder="Search patterns..." class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-sm focus:outline-none focus:border-black dark:focus:border-white">
+                        </div>
+                        <div id="pattern-list" class="p-1 max-h-60 overflow-y-auto">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- Palette -->
+            <div>
+                <label class="text-xs tracking-widest text-gray-400 uppercase mb-2 block">Palette</label>
+                <div id="palettes-grid" class="grid grid-cols-5 gap-2">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Mode -->
+            <div>
+                <label class="text-xs tracking-widest text-gray-400 uppercase mb-2 block">Mode</label>
+                <div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-md">
+                    <button id="mode-dark" class="flex-1 py-1.5 text-xs font-medium rounded bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center gap-2 transition">
+                        <span class="w-3 h-3 rounded-full bg-black border border-gray-300"></span> Dark
+                    </button>
+                    <button id="mode-light" class="flex-1 py-1.5 text-xs font-medium rounded text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center justify-center gap-2 transition">
+                        <span class="w-3 h-3 rounded-full bg-white border border-gray-300"></span> Light
+                    </button>
+                </div>
+            </div>
+
+            <!-- Variation -->
+            <div>
+                <label class="text-xs tracking-widest text-gray-400 uppercase mb-2 block">Variation</label>
+                <button id="btn-generate" class="w-full py-2.5 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    Generate a new one
+                </button>
+            </div>
+
+            <div class="h-px bg-gray-200 dark:bg-gray-800 w-full my-2"></div>
+
+            <!-- Download Actions -->
+            <div class="flex flex-col gap-3">
+                <button id="btn-download-desktop" class="w-full py-3 bg-[#18181b] hover:bg-black text-white dark:bg-gray-100 dark:text-black dark:hover:bg-white rounded-md text-sm font-medium transition flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Download Desktop
+                </button>
+                <div class="text-[10px] text-center text-gray-400 -mt-2 mb-1">3840 x 2160 px</div>
+
+                <button id="btn-download-mobile" class="w-full py-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Download Mobile
+                </button>
+                <div class="text-[10px] text-center text-gray-400 -mt-2">1242 x 2688 px</div>
+            </div>
+
         </div>
     </main>
-
-    <!-- Bottom Action Bar (Fixed) -->
-    <div id="action-bar" class="glass-panel fixed bottom-0 w-full p-4 flex flex-wrap justify-center gap-4 z-50">
-        <button id="btn-generate" class="glass glow px-8 py-3 rounded-full text-lg font-bold bg-sky-500/20 text-sky-300 hover:bg-sky-500/30 transition-all">
-            ✨ Generate
-        </button>
-        <button id="btn-set-wallpaper" class="glass glow px-6 py-3 rounded-full font-semibold transition-all flex items-center gap-2">
-            🖼️ Set as Wallpaper
-        </button>
-        <button id="btn-favorite" class="glass glow px-4 py-3 rounded-full transition-all" title="Save to Favorites">
-            ❤️
-        </button>
-        <button id="btn-share" class="glass glow px-4 py-3 rounded-full transition-all hidden" title="Share">
-            📤
-        </button>
-    </div>
-
-    <!-- Setup Instructions Modal -->
-    <div id="setup-modal" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm items-center justify-center p-4">
-        <div class="glass p-8 rounded-2xl max-w-md w-full relative">
-            <button id="close-modal" class="absolute top-4 right-4 text-white/50 hover:text-white">&times;</button>
-            <h3 class="text-2xl font-bold mb-4 text-sky-400">Wallpaper Ready!</h3>
-            <p class="mb-6 text-white/80" id="setup-instructions">
-                <!-- Injected via JS -->
-            </p>
-            <div class="flex justify-end">
-                <button id="btn-modal-close" class="px-6 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition">Got it</button>
-            </div>
-        </div>
-    </div>
 
     <!-- Hidden Canvas for High-Res Generation -->
     <div id="high-res-container" style="display:none;"></div>
