@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WLLPR - Wallpaper Generator</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- p5.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script> <!-- For easier IndexedDB -->
+
+    <style>
+        body {
+            background-color: #0f172a; /* slate-900 */
+            color: #f8fafc; /* slate-50 */
+            margin: 0;
+            overflow-x: hidden;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        }
+
+        /* Glassmorphism Classes */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glow:hover {
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .selected-ring {
+            box-shadow: 0 0 0 2px #38bdf8; /* sky-400 */
+            border-color: transparent !important;
+        }
+
+        /* Background container for the live preview */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+        }
+
+        /* Modal for setup instructions */
+        #setup-modal {
+            display: none;
+        }
+        #setup-modal.active {
+            display: flex;
+        }
+
+        /* Hide scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- Live Preview Background -->
+    <div id="canvas-container"></div>
+
+    <!-- Navigation -->
+    <nav class="glass-panel w-full p-4 flex justify-between items-center fixed top-0 z-50">
+        <div class="text-xl font-bold tracking-widest text-sky-400">WLLPR</div>
+        <div class="flex gap-4">
+            <button id="nav-generator" class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition cursor-pointer text-sm font-semibold text-white">Generator</button>
+            <button id="nav-favorites" class="px-4 py-2 rounded-lg bg-transparent hover:bg-white/10 transition cursor-pointer text-sm font-semibold text-white/70">My Wallpapers</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow pt-24 pb-32 px-4 sm:px-8 max-w-7xl mx-auto w-full relative z-10" id="main-content">
+        <!-- Generator View -->
+        <div id="view-generator" class="space-y-8 fade-in">
+            <!-- Algorithms Section -->
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 drop-shadow-md">1. Select Art Style</h2>
+                <div id="algorithms-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- Palettes Section -->
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 drop-shadow-md">2. Select Color Palette</h2>
+                <div id="palettes-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+        </div>
+
+        <!-- Favorites View -->
+        <div id="view-favorites" class="hidden space-y-6 fade-in">
+            <h2 class="text-3xl font-bold mb-6 drop-shadow-md">My Wallpapers</h2>
+            <div id="favorites-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Populated by JS -->
+                <p id="no-favorites-msg" class="text-white/50 col-span-full text-center py-12">No favorites yet. Generate some cool wallpapers first!</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Action Bar (Fixed) -->
+    <div id="action-bar" class="glass-panel fixed bottom-0 w-full p-4 flex flex-wrap justify-center gap-4 z-50">
+        <button id="btn-generate" class="glass glow px-8 py-3 rounded-full text-lg font-bold bg-sky-500/20 text-sky-300 hover:bg-sky-500/30 transition-all">
+            ✨ Generate
+        </button>
+        <button id="btn-set-wallpaper" class="glass glow px-6 py-3 rounded-full font-semibold transition-all flex items-center gap-2">
+            🖼️ Set as Wallpaper
+        </button>
+        <button id="btn-favorite" class="glass glow px-4 py-3 rounded-full transition-all" title="Save to Favorites">
+            ❤️
+        </button>
+        <button id="btn-share" class="glass glow px-4 py-3 rounded-full transition-all hidden" title="Share">
+            📤
+        </button>
+    </div>
+
+    <!-- Setup Instructions Modal -->
+    <div id="setup-modal" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm items-center justify-center p-4">
+        <div class="glass p-8 rounded-2xl max-w-md w-full relative">
+            <button id="close-modal" class="absolute top-4 right-4 text-white/50 hover:text-white">&times;</button>
+            <h3 class="text-2xl font-bold mb-4 text-sky-400">Wallpaper Ready!</h3>
+            <p class="mb-6 text-white/80" id="setup-instructions">
+                <!-- Injected via JS -->
+            </p>
+            <div class="flex justify-end">
+                <button id="btn-modal-close" class="px-6 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Canvas for High-Res Generation -->
+    <div id="high-res-container" style="display:none;"></div>
+
+    <script src="palettes.js"></script>
+    <script src="algorithms.js"></script>
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(registration => {
+                    console.log('SW registered: ', registration);
+                }).catch(registrationError => {
+                    console.log('SW registration failed: ', registrationError);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+const palettes = [
+    { id: 'nordic', name: 'Nordic Minimal', colors: ['#D8DEE9', '#E5E9F0', '#ECEFF4', '#81A1C1', '#5E81AC'] },
+    { id: 'bioluminescence', name: 'Bioluminescence', colors: ['#0A1128', '#1282A2', '#034078', '#001F54', '#0FEFFD'] },
+    { id: 'synthwave', name: 'Synthwave', colors: ['#2B0F4C', '#531CB3', '#B14AED', '#E28413', '#FF4E00'] },
+    { id: 'monochrome', name: 'Monochrome Noir', colors: ['#121212', '#282828', '#3F3F3F', '#575757', '#717171'] },
+    { id: 'cyberpunk', name: 'Cyberpunk City', colors: ['#FCEE09', '#00FF41', '#00FFFF', '#FF003C', '#01012B'] },
+    { id: 'forest', name: 'Deep Forest', colors: ['#1A4314', '#2C5E1A', '#326D1E', '#538D22', '#73A942'] },
+    { id: 'sunset', name: 'Martian Sunset', colors: ['#FF5A5F', '#C81D25', '#087E8B', '#3C3C3C', '#F5F5F5'] },
+    { id: 'ocean', name: 'Abyssal Ocean', colors: ['#000B18', '#00173D', '#002663', '#00368C', '#0047B8'] },
+    { id: 'neon', name: 'Neon Dreams', colors: ['#FF00FF', '#00FFFF', '#00FF00', '#FFFF00', '#FF0000'] },
+    { id: 'pastel', name: 'Pastel Skies', colors: ['#FFD1DC', '#FFB6C1', '#FF69B4', '#FF1493', '#DB7093'] },
+    { id: 'desert', name: 'Dune Mirage', colors: ['#EDC9AF', '#D2B48C', '#C2B280', '#C19A6B', '#967117'] },
+    { id: 'volcano', name: 'Magma Core', colors: ['#1A0000', '#330000', '#4D0000', '#660000', '#FF4500'] },
+    { id: 'arctic', name: 'Arctic Frost', colors: ['#F0F8FF', '#E6E6FA', '#B0E0E6', '#ADD8E6', '#87CEEB'] },
+    { id: 'vintage', name: 'Vintage Polaroid', colors: ['#F5DEB3', '#D2B48C', '#DEB887', '#BC8F8F', '#F4A460'] },
+    { id: 'galaxy', name: 'Milky Way', colors: ['#0B3D91', '#1E2761', '#401170', '#7A2048', '#FFB6C1'] },
+    { id: 'autumn', name: 'Autumn Leaves', colors: ['#8B4513', '#A0522D', '#CD853F', '#D2691E', '#FF8C00'] },
+    { id: 'matrix', name: 'Digital Rain', colors: ['#000000', '#003300', '#006600', '#009900', '#00FF00'] },
+    { id: 'candy', name: 'Cotton Candy', colors: ['#FFB7B2', '#FF9AA2', '#FFDAC1', '#E2F0CB', '#B5EAD7'] },
+    { id: 'gold', name: 'Royal Gold', colors: ['#1C1C1C', '#383838', '#555555', '#D4AF37', '#FFDF00'] },
+    { id: 'abyss', name: 'The Abyss', colors: ['#000000', '#050505', '#0A0A0A', '#101010', '#151515'] }
+];
